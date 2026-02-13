@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PMC 構造號碼查詢系統</title>
+    <title>PMC 構造號碼查詢</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- SheetJS for parsing Excel data -->
@@ -124,8 +124,8 @@
                             <th class="px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">構造號碼</th>
                             <th class="px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">設備代碼</th>
                             <th class="px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">事業單位</th>
-                            <th class="px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">狀態</th>
-                            <th class="px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">備註/日期</th>
+                            <th class="px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">狀態(115/1/27查詢)</th>
+                            <th class="px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">處理狀況</th>
                         </tr>
                     </thead>
                     <tbody id="table-body" class="divide-y divide-slate-100 bg-white">
@@ -168,7 +168,10 @@
                 constructionNo: '構造號碼',
                 equipCode: '設備代碼',
                 company: '事業單位名稱',
-                status: '狀態'
+                // 支援舊欄位名稱與新欄位名稱
+                status: '狀態', 
+                statusNew: '狀態(115/1/27查詢)', 
+                process: '處理狀況' // 對應新要求的 "處理狀況" 欄位
             }
         };
 
@@ -321,24 +324,34 @@
                 const cNo = String(row[CONFIG.keys.constructionNo] || row['構造號碼'] || "-");
                 const eCode = String(row[CONFIG.keys.equipCode] || row['設備代碼'] || "-");
                 const comp = String(row[CONFIG.keys.company] || row['事業單位名稱'] || "-");
-                const status = String(row[CONFIG.keys.status] || row['狀態'] || "-");
+                
+                // 優先使用新欄位名稱，若無則使用舊欄位
+                const status = String(row[CONFIG.keys.statusNew] || row[CONFIG.keys.status] || row['狀態'] || "-");
 
-                // 處理雜項欄位
-                let remarks = [];
-                Object.keys(row).forEach(k => {
-                    const val = row[k];
-                    const keyStr = String(k);
-                    // 排除主要欄位與 SheetJS 內部屬性
-                    if (
-                        !Object.values(CONFIG.keys).includes(keyStr) && 
-                        keyStr !== '構造號碼' && keyStr !== '設備代碼' && keyStr !== '事業單位名稱' && keyStr !== '狀態' &&
-                        val && 
-                        !keyStr.startsWith("__EMPTY")
-                    ) {
-                        remarks.push(val);
-                    }
-                });
-                const remarkStr = remarks.join(" ");
+                // 處理 "處理狀況" 欄位
+                let processInfo = "";
+                // 1. 先嘗試直接讀取 "處理狀況" 欄位
+                if (row[CONFIG.keys.process] || row['處理狀況']) {
+                    processInfo = row[CONFIG.keys.process] || row['處理狀況'];
+                } else {
+                    // 2. 如果沒有 "處理狀況" 欄位，則沿用舊邏輯：抓取剩餘的未命名欄位 (日期、姓名等)
+                    let remarks = [];
+                    Object.keys(row).forEach(k => {
+                        const val = row[k];
+                        const keyStr = String(k);
+                        // 排除已知欄位與 SheetJS 內部屬性
+                        const isKnownKey = Object.values(CONFIG.keys).includes(keyStr);
+                        if (
+                            !isKnownKey && 
+                            keyStr !== '構造號碼' && keyStr !== '設備代碼' && keyStr !== '事業單位名稱' && keyStr !== '狀態' && keyStr !== '狀態(115/1/27查詢)' &&
+                            val && 
+                            !keyStr.startsWith("__EMPTY")
+                        ) {
+                            remarks.push(val);
+                        }
+                    });
+                    processInfo = remarks.join(" ");
+                }
 
                 // 狀態樣式
                 let statusClass = "bg-gray-100 text-gray-600 border border-gray-200";
@@ -357,7 +370,7 @@
                     <td class="px-5 py-3 text-sm text-slate-600 whitespace-nowrap">${eCode}</td>
                     <td class="px-5 py-3 text-sm text-slate-800 font-medium whitespace-nowrap">${comp}</td>
                     <td class="px-5 py-3 whitespace-nowrap"><span class="px-2.5 py-1 rounded-md text-xs font-medium ${statusClass}">${status}</span></td>
-                    <td class="px-5 py-3 text-xs text-slate-400 max-w-xs truncate" title="${remarkStr}">${remarkStr}</td>
+                    <td class="px-5 py-3 text-xs text-slate-400 max-w-xs truncate" title="${processInfo}">${processInfo}</td>
                 `;
                 tableBody.appendChild(tr);
             });
