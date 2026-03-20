@@ -4,11 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PMC 構造號碼查詢</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- SheetJS for parsing Excel data -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { font-family: 'Noto Sans TC', sans-serif; }
@@ -25,7 +22,7 @@
             border-top: 3px solid #3b82f6;
             width: 20px;
             height: 20px;
-            -webkit-animation: spin 1s linear infinite; /* Safari */
+            -webkit-animation: spin 1s linear infinite;
             animation: spin 1s linear infinite;
         }
         @keyframes spin {
@@ -36,7 +33,6 @@
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-800 flex flex-col">
 
-    <!-- Navbar -->
     <nav class="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-20">
         <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
             <div class="flex items-center space-x-3">
@@ -61,31 +57,48 @@
         </div>
     </nav>
 
-    <!-- Main Content -->
-    <div class="flex-grow max-w-4xl mx-auto w-full p-4 md:p-6 space-y-6">
+    <div class="flex-grow max-w-5xl mx-auto w-full p-4 md:p-6 space-y-6">
         
-        <!-- Search Area -->
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <label for="search-input" class="block text-sm font-bold text-slate-700 mb-2">輸入構造號碼查詢</label>
-            <div class="relative group">
-                <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                    <i class="fa-solid fa-magnifying-glass text-slate-400 group-focus-within:text-blue-500 transition-colors"></i>
+            <label class="block text-sm font-bold text-slate-700 mb-2">搜尋與篩選</label>
+            
+            <div class="flex flex-col md:flex-row gap-3 relative">
+                <div class="relative group flex-grow">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <i class="fa-solid fa-magnifying-glass text-slate-400 group-focus-within:text-blue-500 transition-colors"></i>
+                    </div>
+                    <input type="text" id="search-input" 
+                        placeholder="輸入構造號碼 (例如: 212EU...)" 
+                        class="block w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-[15px] focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled>
                 </div>
-                <input type="text" id="search-input" 
-                    placeholder="例如: 212EU..." 
-                    class="block w-full pl-11 pr-4 py-4 bg-slate-50 border border-slate-200 rounded-xl text-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled>
-                <div id="search-loading" class="absolute inset-y-0 right-0 pr-4 flex items-center hidden">
+
+                <div class="md:w-64 flex-shrink-0 relative group">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <i class="fa-solid fa-filter text-slate-400 group-focus-within:text-blue-500 transition-colors"></i>
+                    </div>
+                    <select id="status-filter" 
+                        class="block w-full pl-11 pr-8 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-[15px] text-slate-700 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none disabled:opacity-50 disabled:cursor-not-allowed appearance-none cursor-pointer"
+                        disabled>
+                        <option value="all">所有認證狀態</option>
+                        <option value="empty">尚未處理 (空值)</option>
+                    </select>
+                    <div class="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
+                        <i class="fa-solid fa-chevron-down text-slate-400 text-xs"></i>
+                    </div>
+                </div>
+
+                <div id="search-loading" class="absolute right-[-30px] top-4 flex items-center hidden">
                     <div class="loader"></div>
                 </div>
             </div>
-            <p class="mt-2 text-xs text-slate-400 flex justify-between">
-                <span><i class="fa-solid fa-keyboard mr-1"></i>支援模糊搜尋 (輸入部分號碼即可)</span>
+
+            <p class="mt-3 text-xs text-slate-400 flex justify-between items-center">
+                <span><i class="fa-solid fa-circle-info mr-1"></i>可單獨輸入構造號碼，或直接選擇狀態來列出所有對應案件。</span>
                 <span id="record-count-badge" class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs hidden">0 筆資料</span>
             </p>
         </div>
 
-        <!-- Error Message (Hidden by default) -->
         <div id="error-box" class="hidden bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg shadow-sm">
             <div class="flex flex-col md:flex-row md:items-start">
                 <div class="flex-shrink-0 mb-2 md:mb-0">
@@ -94,23 +107,10 @@
                 <div class="ml-0 md:ml-3">
                     <p class="text-sm text-red-700 font-bold">讀取資料失敗</p>
                     <p class="text-xs text-red-600 mt-1 mb-2" id="error-text">無法連線至 Google Sheets，請檢查網路或權限設定。</p>
-                    
-                    <!-- Help Guide for Permissions -->
-                    <div class="bg-white p-3 rounded border border-red-100 text-xs text-slate-600">
-                        <strong><i class="fa-solid fa-wrench mr-1"></i>請檢查 Google Sheet 權限：</strong>
-                        <ol class="list-decimal ml-4 mt-1 space-y-1">
-                            <li>打開您的 Google Sheet。</li>
-                            <li>點擊右上角的 <span class="bg-blue-600 text-white px-1 rounded text-[10px]">共用 (Share)</span> 按鈕。</li>
-                            <li>確認「一般存取權」已設定為 <strong>「知道連結的任何人」</strong> (Anyone with the link)。</li>
-                            <li>確認權限為 <strong>「檢視者」</strong> (Viewer)。</li>
-                            <li>點擊「完成」後，重新整理此網頁。</li>
-                        </ol>
-                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Results Table -->
         <div id="result-container" class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hidden min-h-[300px] flex flex-col">
             <div class="bg-slate-50 px-5 py-3 border-b border-slate-200 flex justify-between items-center">
                 <h2 class="font-bold text-slate-700 text-sm">查詢結果</h2>
@@ -125,58 +125,51 @@
                             <th class="px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">設備代碼</th>
                             <th class="px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">事業單位</th>
                             <th class="px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">狀態(115/1/27查詢)</th>
-                            <th class="px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">處理狀況</th>
+                            <th class="px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">代檢機構處理狀況</th>
+                            <th class="px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider whitespace-nowrap">聲明書or第三方認證</th>
                         </tr>
                     </thead>
                     <tbody id="table-body" class="divide-y divide-slate-100 bg-white">
-                        <!-- Content injected by JS -->
-                    </tbody>
+                        </tbody>
                 </table>
             </div>
 
-            <!-- Empty Search State -->
             <div id="initial-state" class="flex flex-col items-center justify-center py-12 text-slate-300">
                 <i class="fa-solid fa-magnifying-glass-arrow-right text-5xl mb-3 opacity-20"></i>
-                <p class="text-sm">請輸入關鍵字開始查詢</p>
+                <p class="text-sm">請輸入關鍵字或選擇狀態開始查詢</p>
             </div>
-             <!-- No Results State -->
              <div id="no-results" class="hidden flex flex-col items-center justify-center py-12 text-slate-400">
                 <i class="fa-regular fa-face-frown text-4xl mb-2 opacity-50"></i>
                 <p class="text-sm">找不到符合的資料</p>
             </div>
         </div>
-
     </div>
 
-    <!-- Footer -->
     <footer class="mt-auto py-6 text-center text-xs text-slate-400">
         資料來源：Google Sheets | 系統僅供查詢使用
     </footer>
 
     <script>
         // --- 設定區 ---
-        // 您的 Google Sheet ID
         const SHEET_ID = '14KPaExc4vHucq0IkVG4gtlsn3hd_QEo1z-UpEUCGvz4';
-        
-        // 改用 XLSX 格式下載，這樣可以讀取整本 Excel，避免資料不在第一頁的問題
         const EXPORT_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=xlsx`;
 
-        // 全域變數
         let db = [];
         const CONFIG = {
             keys: {
                 constructionNo: '構造號碼',
                 equipCode: '設備代碼',
                 company: '事業單位名稱',
-                // 支援舊欄位名稱與新欄位名稱
                 status: '狀態', 
                 statusNew: '狀態(115/1/27查詢)', 
-                process: '處理狀況' // 對應新要求的 "處理狀況" 欄位
+                process: '代檢機構處理狀況',            
+                certStatus: '聲明書or第三方認證提情況'  
             }
         };
 
         // DOM 元素
         const searchInput = document.getElementById('search-input');
+        const statusFilter = document.getElementById('status-filter');
         const tableBody = document.getElementById('table-body');
         const resultContainer = document.getElementById('result-container');
         const initialState = document.getElementById('initial-state');
@@ -189,24 +182,19 @@
         const lastUpdateSpan = document.getElementById('last-update');
         const searchLoading = document.getElementById('search-loading');
 
-        // 初始化
         window.addEventListener('DOMContentLoaded', () => {
             fetchGoogleSheetData();
         });
 
-        // 讀取 Google Sheet 資料 (升級版：支援多工作表搜尋)
         async function fetchGoogleSheetData() {
-            // UI 重設為讀取中
             connectionStatus.innerHTML = `<span class="w-2 h-2 rounded-full bg-yellow-400 mr-1.5 animate-pulse"></span>更新資料中...`;
             searchInput.disabled = true;
+            statusFilter.disabled = true;
             errorBox.classList.add('hidden');
             
             try {
                 const response = await fetch(EXPORT_URL);
-                
-                if (!response.ok) {
-                    throw new Error(`連線被拒絕 (Status: ${response.status})。請確認 Google Sheet 的權限已設為「公開」 (Anyone with the link)。`);
-                }
+                if (!response.ok) throw new Error(`連線被拒絕 (Status: ${response.status})。`);
                 
                 const arrayBuffer = await response.arrayBuffer();
                 const data = new Uint8Array(arrayBuffer);
@@ -215,40 +203,31 @@
                 let foundData = [];
                 let targetSheetName = "";
 
-                // 自動掃描所有工作表，尋找含有正確欄位的表
                 for (let i = 0; i < workbook.SheetNames.length; i++) {
                     const sheetName = workbook.SheetNames[i];
                     const worksheet = workbook.Sheets[sheetName];
                     const jsonData = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
 
                     if (jsonData.length > 0) {
-                        // 檢查第一筆資料是否包含關鍵欄位 "構造號碼"
                         const firstRow = jsonData[0];
-                        // 寬鬆檢查：只要 key 包含 "構造號碼" 或是該欄位存在
                         if (firstRow.hasOwnProperty(CONFIG.keys.constructionNo) || Object.keys(firstRow).some(k => k.includes('構造'))) {
                             foundData = jsonData;
                             targetSheetName = sheetName;
-                            break; // 找到了就跳出
+                            break;
                         }
                     }
                 }
                 
                 if (foundData.length === 0) {
-                    // 如果還是沒找到，可以嘗試列印出所有的 sheet names 來除錯，但對使用者來說顯示錯誤訊息較實在
-                    // 這裡的 fallback 是：如果沒找到特定欄位，就拿第一個不是空的 sheet
                     if(workbook.SheetNames.length > 0) {
                          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                          foundData = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
-                         console.warn("未找到完全匹配的欄位，嘗試載入第一個工作表。");
                     }
-                    
-                    if (foundData.length === 0) throw new Error("讀取到了檔案，但在 Excel 中找不到任何資料。請確認檔案內容。");
+                    if (foundData.length === 0) throw new Error("在 Excel 中找不到任何資料。");
                 }
 
-                console.log(`已載入工作表: ${targetSheetName}, 筆數: ${foundData.length}`);
                 db = foundData;
-                
-                // 成功讀取
+                extractFilterOptions(); // 動態提取下拉選單選項
                 updateUIState(true);
                 
             } catch (error) {
@@ -258,12 +237,37 @@
             }
         }
 
+        // 動態擷取「聲明書or第三方認證提情況」的選項
+        function extractFilterOptions() {
+            const uniqueStatuses = new Set();
+            
+            db.forEach(row => {
+                const val = String(row[CONFIG.keys.certStatus] || row['聲明書or第三方認證提情況'] || "").trim();
+                if (val !== "") {
+                    uniqueStatuses.add(val);
+                }
+            });
+
+            // 清空並保留預設選項
+            statusFilter.innerHTML = `
+                <option value="all">所有認證狀態</option>
+                <option value="empty">尚未處理 (空值)</option>
+            `;
+
+            // 將擷取到的態樣排序後加入下拉選單
+            Array.from(uniqueStatuses).sort().forEach(status => {
+                const option = document.createElement('option');
+                option.value = status;
+                option.textContent = status;
+                statusFilter.appendChild(option);
+            });
+        }
+
         function updateUIState(success) {
             if (success) {
                 connectionStatus.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-500 mr-1.5"></span>連線正常`;
                 searchInput.disabled = false;
-                searchInput.placeholder = `在 ${db.length} 筆資料中搜尋...`;
-                searchInput.focus();
+                statusFilter.disabled = false;
                 
                 recordCountBadge.textContent = `${db.length} 筆資料`;
                 recordCountBadge.classList.remove('hidden');
@@ -278,12 +282,16 @@
             errorText.innerHTML = msg;
         }
 
-        // 搜尋邏輯
-        searchInput.addEventListener('input', (e) => {
-            const term = e.target.value.trim().toLowerCase();
+        // 統一的搜尋與過濾邏輯
+        function triggerSearch() {
+            const term = searchInput.value.trim().toLowerCase();
+            const filterValue = statusFilter.value;
             
-            if (term === '') {
+            // 如果搜尋框空白 且 篩選選單是「所有」，則回歸初始畫面
+            if (term === '' && filterValue === 'all') {
                 resultContainer.classList.add('hidden');
+                initialState.classList.remove('hidden');
+                searchLoading.classList.add('hidden');
                 return;
             }
 
@@ -291,17 +299,37 @@
             resultContainer.classList.remove('hidden');
             initialState.classList.add('hidden');
 
+            // 稍微延遲讓 loading 動畫可以顯示
             setTimeout(() => {
                 const filtered = db.filter(row => {
-                    // 使用更寬鬆的匹配，因為 SheetJS 可能會有 whitespace
+                    // 1. 判斷文字搜尋是否符合
                     const cNo = String(row[CONFIG.keys.constructionNo] || row['構造號碼'] || "").trim().toLowerCase();
-                    return cNo.includes(term); 
+                    const textMatch = (term === '') || cNo.includes(term);
+
+                    // 2. 判斷下拉選單是否符合
+                    const certInfo = String(row[CONFIG.keys.certStatus] || row['聲明書or第三方認證提情況'] || "").trim();
+                    let filterMatch = false;
+                    
+                    if (filterValue === 'all') {
+                        filterMatch = true;
+                    } else if (filterValue === 'empty') {
+                        filterMatch = (certInfo === "");
+                    } else {
+                        filterMatch = (certInfo === filterValue);
+                    }
+
+                    // 兩者皆須符合
+                    return textMatch && filterMatch;
                 });
 
                 renderTable(filtered, term);
                 searchLoading.classList.add('hidden');
-            }, 50); 
-        });
+            }, 50);
+        }
+
+        // 綁定事件：不管是打字還是選下拉選單，都會觸發篩選
+        searchInput.addEventListener('input', triggerSearch);
+        statusFilter.addEventListener('change', triggerSearch);
 
         function renderTable(data, highlightTerm) {
             tableBody.innerHTML = '';
@@ -314,7 +342,6 @@
                 noResults.classList.add('hidden');
             }
 
-            // 為了效能，最多顯示 100 筆
             const displayData = data.slice(0, 100);
 
             displayData.forEach(row => {
@@ -324,60 +351,39 @@
                 const cNo = String(row[CONFIG.keys.constructionNo] || row['構造號碼'] || "-");
                 const eCode = String(row[CONFIG.keys.equipCode] || row['設備代碼'] || "-");
                 const comp = String(row[CONFIG.keys.company] || row['事業單位名稱'] || "-");
-                
-                // 優先使用新欄位名稱，若無則使用舊欄位
                 const status = String(row[CONFIG.keys.statusNew] || row[CONFIG.keys.status] || row['狀態'] || "-");
+                
+                const processInfo = String(row[CONFIG.keys.process] || row['代檢機構處理狀況'] || "");
+                const certInfo = String(row[CONFIG.keys.certStatus] || row['聲明書or第三方認證提情況'] || "");
 
-                // 處理 "處理狀況" 欄位
-                let processInfo = "";
-                // 1. 先嘗試直接讀取 "處理狀況" 欄位
-                if (row[CONFIG.keys.process] || row['處理狀況']) {
-                    processInfo = row[CONFIG.keys.process] || row['處理狀況'];
-                } else {
-                    // 2. 如果沒有 "處理狀況" 欄位，則沿用舊邏輯：抓取剩餘的未命名欄位 (日期、姓名等)
-                    let remarks = [];
-                    Object.keys(row).forEach(k => {
-                        const val = row[k];
-                        const keyStr = String(k);
-                        // 排除已知欄位與 SheetJS 內部屬性
-                        const isKnownKey = Object.values(CONFIG.keys).includes(keyStr);
-                        if (
-                            !isKnownKey && 
-                            keyStr !== '構造號碼' && keyStr !== '設備代碼' && keyStr !== '事業單位名稱' && keyStr !== '狀態' && keyStr !== '狀態(115/1/27查詢)' &&
-                            val && 
-                            !keyStr.startsWith("__EMPTY")
-                        ) {
-                            remarks.push(val);
-                        }
-                    });
-                    processInfo = remarks.join(" ");
-                }
-
-                // 狀態樣式
                 let statusClass = "bg-gray-100 text-gray-600 border border-gray-200";
                 if (status.includes("正常")) statusClass = "bg-green-50 text-green-700 border border-green-200";
                 else if (status.includes("停用") || status.includes("廢止")) statusClass = "bg-red-50 text-red-700 border border-red-200";
                 else if (status.includes("申請")) statusClass = "bg-blue-50 text-blue-700 border border-blue-200";
 
-                // 高亮關鍵字
                 const highlight = (txt) => {
                     if (!highlightTerm) return txt;
                     return txt.replace(new RegExp(`(${highlightTerm})`, 'gi'), '<mark class="bg-yellow-200 text-slate-900 rounded-sm px-0.5">$1</mark>');
                 };
+
+                // 若該格為空，為了排版美觀可補上灰色的 "-"，您也可以拿掉
+                const displayProcessInfo = processInfo || '<span class="text-slate-300">-</span>';
+                const displayCertInfo = certInfo || '<span class="text-slate-300">-</span>';
 
                 tr.innerHTML = `
                     <td class="px-5 py-3 font-mono font-medium text-blue-600 text-sm whitespace-nowrap">${highlight(cNo)}</td>
                     <td class="px-5 py-3 text-sm text-slate-600 whitespace-nowrap">${eCode}</td>
                     <td class="px-5 py-3 text-sm text-slate-800 font-medium whitespace-nowrap">${comp}</td>
                     <td class="px-5 py-3 whitespace-nowrap"><span class="px-2.5 py-1 rounded-md text-xs font-medium ${statusClass}">${status}</span></td>
-                    <td class="px-5 py-3 text-xs text-slate-400 max-w-xs truncate" title="${processInfo}">${processInfo}</td>
+                    <td class="px-5 py-3 text-xs text-slate-600 max-w-xs truncate" title="${processInfo}">${displayProcessInfo}</td>
+                    <td class="px-5 py-3 text-xs text-slate-600 max-w-xs truncate" title="${certInfo}">${displayCertInfo}</td>
                 `;
                 tableBody.appendChild(tr);
             });
             
             if (data.length > 100) {
                  const tr = document.createElement('tr');
-                 tr.innerHTML = `<td colspan="5" class="px-5 py-3 text-center text-xs text-slate-400 italic bg-slate-50/50">還有 ${data.length - 100} 筆結果，請輸入更多關鍵字來篩選...</td>`;
+                 tr.innerHTML = `<td colspan="6" class="px-5 py-3 text-center text-xs text-slate-400 italic bg-slate-50/50">還有 ${data.length - 100} 筆結果，請提供更精準的條件來篩選...</td>`;
                  tableBody.appendChild(tr);
             }
         }
